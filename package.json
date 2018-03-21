@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/Ghostly-Bear-Games/google-drive-discord-notifications/issues"
   },
-  "homepage": "https://github.com/Ghostly-Bear-Games/google-drive-discord-notifications#readme"
+  "homepage": "https://github.com/Ghostly-Bear-Games/google-drive-discord-notifications#readme",
+  "dependencies": {
+    "discord.js": "^11.3.2"
+  }
 }
