@@ -4,6 +4,7 @@
   "description": "Push Google Drive notifications to Discord!",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "npm run test"
   },
   "repository": {
