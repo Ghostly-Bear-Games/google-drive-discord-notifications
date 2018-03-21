@@ -1,0 +1,26 @@
+{
+  "name": "google-drive-discord-notifications",
+  "version": "1.0.0",
+  "description": "Push Google Drive notifications to Discord!",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ghostly-Bear-Games/google-drive-discord-notifications.git"
+  },
+  "keywords": [
+    "discord",
+    "google",
+    "drive",
+    "notification",
+    "change"
+  ],
+  "author": "Michael Yu (miyu)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Ghostly-Bear-Games/google-drive-discord-notifications/issues"
+  },
+  "homepage": "https://github.com/Ghostly-Bear-Games/google-drive-discord-notifications#readme"
+}
