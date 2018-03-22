@@ -1,5 +1,7 @@
 const config = require('../config/default')
+
 const Bluebird = require('bluebird')
+const cli = require('commander')
 const fs = require('fs')
 const JsDiff = require('diff')
 Bluebird.promisifyAll(fs)
@@ -7,13 +9,14 @@ Bluebird.promisifyAll(fs)
 // discord stuff
 const Discord = require('discord.js');
 const discordHook = new Discord.WebhookClient(config.discord.webhookId, config.discord.webhookToken);
+const discordClient = new Discord.Client();
 
 // drive stuff
 const DriveAuth = require('./DriveAuth')
 const DriveApi = require('./DriveApi')
 
 // Send a message using the webhook
-async function init() {
+async function fetchLatestDriveOnFirstRun() {
     if (fs.existsSync(config.drive.lastPageTokenStorePath)) {
         console.log(`Found ${config.drive.lastPageTokenStorePath} - not pulling all files again.`)
         return;
@@ -51,11 +54,12 @@ async function init() {
     }
 }
 
-async function mainLoop() {
+async function buildSummary(updateHead) {
     let pageToken = (await fs.readFileAsync(config.drive.lastPageTokenStorePath, 'utf8')).trim();
     if (pageToken.length == 0) {
         console.log(`Warning: Corrupt initial start page token. Fetching again...`)
         pageToken = (await DriveApi.changesGetStartPageToken()).startPageToken;
+        await fs.writeFileAsync(config.drive.lastPageTokenStorePath, pageToken);
     }
     console.log(`Using start page token: ${pageToken}`)
 
@@ -123,7 +127,10 @@ async function mainLoop() {
         } else {
             summaryAdds.push(change)
         }
-        await fs.writeFileAsync(headStoreFilePath, content)
+
+        if (updateHead) {
+            await fs.writeFileAsync(headStoreFilePath, content)
+        }
 
         const nameStoreFilePath = config.drive.nameStorePath + '/' + change.file.id + '.txt'
         await fs.writeFileAsync(nameStoreFilePath, change.file.name);
@@ -174,12 +181,56 @@ async function mainLoop() {
         }
     }
 
-    if (summaryLines.length) {
-        console.log(summaryLines.join('\r\n'))
-        discordHook.send(summaryLines)
+    if (updateHead) {
+        await fs.writeFileAsync(config.drive.lastPageTokenStorePath, pageToken)
     }
 
-    await fs.writeFileAsync(config.drive.lastPageTokenStorePath, pageToken)
+    return summaryLines.join('\r\n');
 }
 
-DriveAuth.loaded.then(init).then(mainLoop);
+async function main(opts) {
+    console.log('Running with options: ', JSON.stringify(opts))
+
+    await DriveAuth.loaded;
+    await fetchLatestDriveOnFirstRun();
+    await discordClient.login(config.discord.clientToken);
+    console.log(`Logged in as ${discordClient.user.tag}!`);
+    const channel = discordClient.guilds.get(config.discord.guildId).channels.get(config.discord.channelId);
+    const summary = await buildSummary(false);
+
+    if (opts.dryRun) {
+        // do nothing, summar
+        console.log("== Dry Run ==");
+        console.log(summary);
+    } else {
+        let oldMessage = null;
+        if (opts.editPreviousMessage && fs.existsSync(config.discord.lastMessageIdPath)) {
+            try {
+                const oldMessageId = (await fs.readFileAsync(config.discord.lastMessageIdPath, 'utf8')).trim();
+                console.log("Trying old message id:", oldMessageId);
+                oldMessage = await channel.fetchMessage(oldMessageId);
+            } catch(e) {
+                console.error("Failed to load edit messageId or message:", e)
+            }
+        }
+
+        if (!oldMessage) {
+            console.log("Pushing new message:", summary)
+            const message = await channel.send(summary);
+
+            console.log("New message id:", message.id);
+            fs.writeFileAsync(config.discord.lastMessageIdPath, message.id);
+        } else {
+            console.log("Editing old message:", oldMessage.id, summary);
+            await oldMessage.edit(summary);
+        }
+    }
+
+    await discordClient.destroy();
+}
+
+cli.option('--dry-run', 'Dry run (just prints summary to console)')
+   .option('--edit-previous-message', 'Edits prev discord message if exists, else posts new')
+   .parse(process.argv)
+
+main(cli.opts());
