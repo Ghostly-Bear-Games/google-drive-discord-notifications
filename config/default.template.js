@@ -26,5 +26,7 @@ module.exports = {
 
         // drive snapshots are downloaded to tmp for diffs, then persisted in head
         headPath: __dirname + '/../data/head',
+        nameStorePath: __dirname + '/../data/name',
+        lastPageTokenStorePath: __dirname + '/../data/last_page_token'
     },
 }
