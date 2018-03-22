@@ -61,5 +61,7 @@ typings/
 .next
 
 # config file
-config/*
-!config/*.template.js
+config/**/*.js
+config/**/*.json
+!config/**/*.template.js
+!config/**/*.template.json
