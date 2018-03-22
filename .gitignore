@@ -65,3 +65,6 @@ config/**/*.js
 config/**/*.json
 !config/**/*.template.js
 !config/**/*.template.json
+
+# data
+data/

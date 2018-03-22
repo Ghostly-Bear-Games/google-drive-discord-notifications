@@ -13,7 +13,9 @@ const config = require('../config/default');
 
 // If modifying these scopes, delete your previously saved credentials
 // at config.drive.cachedTokenPath
-const SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
+const SCOPES = [
+    'https://www.googleapis.com/auth/drive.readonly',
+    'https://www.googleapis.com/auth/drive.metadata.readonly'];
 
 // Load client secrets from config / force fetch config at app start (blocking)
 module.exports = {};
