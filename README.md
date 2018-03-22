@@ -27,8 +27,9 @@ Pass in arguments like as follows: `npm start -- --dry-run`
 |---|--|
 |--dry-run|Dry run (just prints summary to console)|
 |--edit-previous-message|Edits previous discord message if exists, else posts new|
+|--force-create-message-duration [duration]|Forces new post if old message this old|
 
-If `--edit-previous-message` and `--dry-run` aren't specified, a new message is posted.
+If `--edit-previous-message` and `--dry-run` aren't specified, a new message is posted. Running `npm start -- --edit-previous-message --force-create-message-duration=1hr` every minute would update previously posted bot messages, posting a new message every hour.
 
 ### Resetting to a clean slate
 Clearing `data` folders forces a clean download of team drives on next run (and therefore won't notify of any prior changes). For now, you'll want to clear folders, NOT delete them (the script doesn't create the folders if they don't exist).

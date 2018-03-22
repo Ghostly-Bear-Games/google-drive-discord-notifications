@@ -4,6 +4,7 @@ const Bluebird = require('bluebird')
 const cli = require('commander')
 const fs = require('fs')
 const JsDiff = require('diff')
+const parseDuration = require('parse-duration')
 Bluebird.promisifyAll(fs)
 
 // discord stuff
@@ -185,10 +186,13 @@ async function buildSummary(updateHead) {
         await fs.writeFileAsync(config.drive.lastPageTokenStorePath, pageToken)
     }
 
-    return summaryLines.join('\r\n');
+    return [summaryLines.join('\r\n'), pageToken];
 }
 
 async function main(opts) {
+    if (opts.forceCreateMessageDuration) {
+        opts.forceCreateMessageDuration = parseDuration(opts.forceCreateMessageDuration);
+    }
     console.log('Running with options: ', JSON.stringify(opts))
 
     await DriveAuth.loaded;
@@ -196,12 +200,13 @@ async function main(opts) {
     await discordClient.login(config.discord.clientToken);
     console.log(`Logged in as ${discordClient.user.tag}!`);
     const channel = discordClient.guilds.get(config.discord.guildId).channels.get(config.discord.channelId);
-    const summary = await buildSummary(false);
 
     if (opts.dryRun) {
         // do nothing, summar
         console.log("== Dry Run ==");
+        const [summary, pageToken] = await buildSummary(false);
         console.log(summary);
+        console.log("Page Token:", pageToken);
     } else {
         let oldMessage = null;
         if (opts.editPreviousMessage && fs.existsSync(config.discord.lastMessageIdPath)) {
@@ -215,22 +220,52 @@ async function main(opts) {
         }
 
         if (!oldMessage) {
+            const [summary, pageToken] = await buildSummary(true);
             console.log("Pushing new message:", summary)
-            const message = await channel.send(summary);
+            if (summary.trim().length == 0) {
+                console.log("Summary would be empty. Doing nothing.")
+            } else {
+                console.log("Page Token:", pageToken);
+                const message = await channel.send(summary);
 
-            console.log("New message id:", message.id);
-            fs.writeFileAsync(config.discord.lastMessageIdPath, message.id);
+                console.log("New message id:", message.id);
+                fs.writeFileAsync(config.discord.lastMessageIdPath, message.id);
+            }
         } else {
-            console.log("Editing old message:", oldMessage.id, summary);
-            await oldMessage.edit(summary);
+            let [summary, pageToken] = await buildSummary(false);
+            console.log("Editing old message:", oldMessage.id);
+            if (summary.trim().length == 0) {
+                console.log("Summary empty. Doing nothing.")
+            } else {
+                await oldMessage.edit(summary);
+            }
+
+            if (opts.forceCreateMessageDuration) {
+                const oldMessageAge = oldMessage.editedTimestamp - oldMessage.createdTimestamp;
+                console.log("Old Message Age:", oldMessageAge, "vs", opts.forceCreateMessageDuration);
+
+                if (oldMessageAge > opts.forceCreateMessageDuration) {
+                    console.log("Old message too old! Will consider posting a new one next run.")
+                    let [newSummary, newPageToken] = await buildSummary(true);
+                    if (newSummary.trim().length == 0) {
+                        console.log("Summary empty. Doing nothing.")
+                    } else {
+                        await oldMessage.edit(newSummary);
+                    }
+                    await fs.writeFileAsync(config.discord.lastMessageIdPath, "");
+                }
+            }
+
+            console.log("Page Token:", pageToken);
         }
     }
 
     await discordClient.destroy();
 }
 
-cli.option('--dry-run', 'Dry run (just prints summary to console)')
+cli.option('--dry-run', 'Dry run (just prints parsed options + summary to console)')
    .option('--edit-previous-message', 'Edits prev discord message if exists, else posts new')
+   .option('--force-create-message-duration [duration]', 'Forces new post if old message this old. E.g. 1hr.')
    .parse(process.argv)
 
 main(cli.opts());
