@@ -224,7 +224,7 @@ async function main(opts) {
         }
 
         if (!oldMessage) {
-            const [summary, pageToken] = await buildSummary(true);
+            const [summary, pageToken] = await buildSummary(false);
             console.log("Pushing new message:", summary)
             if (summary.trim().length == 0) {
                 console.log("Summary would be empty. Doing nothing.")
