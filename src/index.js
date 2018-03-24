@@ -212,8 +212,12 @@ async function main(opts) {
         if (opts.editPreviousMessage && fs.existsSync(config.discord.lastMessageIdPath)) {
             try {
                 const oldMessageId = (await fs.readFileAsync(config.discord.lastMessageIdPath, 'utf8')).trim();
-                console.log("Trying old message id:", oldMessageId);
-                oldMessage = await channel.fetchMessage(oldMessageId);
+                if (oldMessageId.length == 0) {
+                    console.log("Old message id empty.")
+                ) else {
+                    console.log("Trying old message id:", oldMessageId);
+                    oldMessage = await channel.fetchMessage(oldMessageId);
+                }
             } catch(e) {
                 console.error("Failed to load edit messageId or message:", e)
             }
