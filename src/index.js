@@ -214,7 +214,7 @@ async function main(opts) {
                 const oldMessageId = (await fs.readFileAsync(config.discord.lastMessageIdPath, 'utf8')).trim();
                 if (oldMessageId.length == 0) {
                     console.log("Old message id empty.")
-                ) else {
+                } else {
                     console.log("Trying old message id:", oldMessageId);
                     oldMessage = await channel.fetchMessage(oldMessageId);
                 }
